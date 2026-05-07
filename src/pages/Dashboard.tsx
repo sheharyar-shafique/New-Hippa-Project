@@ -13,67 +13,53 @@ import {
 import { NOTES, PATIENTS } from '../lib/mockData';
 import StatusPill from '../components/StatusPill';
 import { formatDate, formatDuration, initials, relTime } from '../lib/utils';
+import { useT, useLang } from '../i18n/LanguageProvider';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const t = useT();
+  const { lang } = useLang();
   const todayNotes = NOTES.length;
+
+  const statusKey = (s: string): 'draft' | 'finalized' | 'signed' =>
+    (s as 'draft' | 'finalized' | 'signed');
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
-            Good morning, Dr. Reyes 👋
+            {t('dashboard.greeting')} 👋
           </h1>
           <p className="text-ink-600 mt-1">
-            You have <span className="font-semibold text-ink-900">5 visits</span> on your schedule today.
+            {t('dashboard.todayPrompt')}{' '}
+            <span className="font-semibold text-ink-900">{t('dashboard.todayPromptVisits')}</span>{' '}
+            {t('dashboard.todayPromptEnd')}
           </p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => navigate('/app/labs')} className="btn-secondary">
-            <FlaskConical className="w-4 h-4" /> Analyze a lab
+            <FlaskConical className="w-4 h-4" /> {t('common.analyzeLab')}
           </button>
           <button onClick={() => navigate('/app/new')} className="btn-primary">
-            <Plus className="w-4 h-4" /> New consultation
+            <Plus className="w-4 h-4" /> {t('common.newConsultation')}
           </button>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat
-          icon={FileText}
-          label="Notes this week"
-          value="42"
-          delta="+18% vs last week"
-        />
-        <Stat
-          icon={Clock}
-          label="Avg note draft time"
-          value="6.4s"
-          delta="−1.2s from baseline"
-        />
-        <Stat
-          icon={TrendingUp}
-          label="Time saved this week"
-          value="4h 28m"
-          delta="≈ 36 min/day"
-        />
-        <Stat
-          icon={CheckCircle2}
-          label="Notes signed today"
-          value={`${todayNotes}`}
-          delta="On track"
-        />
+        <Stat icon={FileText} label={t<string>('dashboard.stats.notesWeek')} value="42" delta={t<string>('dashboard.stats.notesWeekDelta')} />
+        <Stat icon={Clock} label={t<string>('dashboard.stats.avgDraftTime')} value="6.4s" delta={t<string>('dashboard.stats.avgDraftTimeDelta')} />
+        <Stat icon={TrendingUp} label={t<string>('dashboard.stats.timeSaved')} value="4h 28m" delta={t<string>('dashboard.stats.timeSavedDelta')} />
+        <Stat icon={CheckCircle2} label={t<string>('dashboard.stats.notesSigned')} value={`${todayNotes}`} delta={t<string>('dashboard.stats.notesSignedDelta')} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
-        {/* Recent notes */}
         <div className="lg:col-span-2 card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-ink-200/70">
-            <h2 className="font-semibold text-ink-900">Recent notes</h2>
+            <h2 className="font-semibold text-ink-900">{t('dashboard.recentTitle')}</h2>
             <Link to="/app/patients" className="text-sm text-brand-700 font-semibold inline-flex items-center gap-1">
-              View all <ArrowRight className="w-3.5 h-3.5" />
+              {t('dashboard.viewAll')} <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
           <ul className="divide-y divide-ink-200/70">
@@ -90,13 +76,15 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-ink-900 truncate">{n.patientName}</p>
                       <span className="text-xs text-ink-500">· {n.age}{n.sex.toLowerCase()}</span>
-                      <StatusPill label={n.status} variant={n.status} />
+                      <StatusPill label={statusKey(n.status)} variant={n.status} translateAs="status" />
                     </div>
-                    <p className="text-sm text-ink-600 truncate">{n.chiefComplaint}</p>
+                    <p className="text-sm text-ink-600 truncate">
+                      {lang === 'es' ? n.chiefComplaintEs : n.chiefComplaint}
+                    </p>
                   </div>
                   <div className="hidden sm:flex flex-col items-end text-xs text-ink-500">
-                    <span>{relTime(n.createdAt)}</span>
-                    <span>{formatDuration(n.durationSec)} · {formatDate(n.createdAt)}</span>
+                    <span>{relTime(n.createdAt, lang)}</span>
+                    <span>{formatDuration(n.durationSec)} · {formatDate(n.createdAt, lang)}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-ink-400" />
                 </Link>
@@ -105,10 +93,9 @@ export default function Dashboard() {
           </ul>
         </div>
 
-        {/* Quick actions / upcoming */}
         <div className="space-y-5">
           <div className="card p-5">
-            <h2 className="font-semibold text-ink-900">Today&rsquo;s schedule</h2>
+            <h2 className="font-semibold text-ink-900">{t('dashboard.scheduleTitle')}</h2>
             <ul className="mt-4 space-y-3">
               {PATIENTS.slice(0, 4).map((p, i) => (
                 <li key={p.id} className="flex items-center gap-3">
@@ -127,17 +114,15 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
-            <button className="mt-4 btn-secondary w-full">View full schedule</button>
+            <button className="mt-4 btn-secondary w-full">{t('dashboard.viewSchedule')}</button>
           </div>
 
           <div className="rounded-2xl bg-gradient-to-tr from-brand-700 to-brand-500 text-white p-5 shadow-soft">
             <Mic className="w-6 h-6" />
-            <p className="mt-3 font-semibold">Start your next visit</p>
-            <p className="text-sm text-white/80 mt-1">
-              Tap to record. SOAP note drafts in seconds.
-            </p>
+            <p className="mt-3 font-semibold">{t('dashboard.ctaTitle')}</p>
+            <p className="text-sm text-white/80 mt-1">{t('dashboard.ctaBody')}</p>
             <button onClick={() => navigate('/app/new')} className="mt-4 btn bg-white text-brand-700 hover:bg-ink-50 w-full">
-              New consultation <ArrowRight className="w-4 h-4" />
+              {t('common.newConsultation')} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -146,17 +131,7 @@ export default function Dashboard() {
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  delta,
-}: {
-  icon: any;
-  label: string;
-  value: string;
-  delta: string;
-}) {
+function Stat({ icon: Icon, label, value, delta }: { icon: any; label: string; value: string; delta: string }) {
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between">

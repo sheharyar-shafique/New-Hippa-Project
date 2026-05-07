@@ -1,4 +1,4 @@
-# Netlify build configuration for MedScribe AI (Vite + React Router SPA)
+# Netlify build configuration for NoteMD (Vite + React Router SPA)
 
 [build]
   command = "npm run build"

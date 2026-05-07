@@ -3,7 +3,7 @@ import { cn } from '../lib/utils';
 export default function Logo({
   className,
   withWordmark = true,
-  size = 28,
+  size = 32,
 }: {
   className?: string;
   withWordmark?: boolean;
@@ -14,30 +14,31 @@ export default function Logo({
       <svg
         width={size}
         height={size}
-        viewBox="0 0 32 32"
+        viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden
       >
-        <defs>
-          <linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#1aae9d" />
-            <stop offset="1" stopColor="#0f6f68" />
-          </linearGradient>
-        </defs>
-        <rect width="32" height="32" rx="9" fill="url(#logo-grad)" />
+        {/* Outlined medical cross */}
         <path
-          d="M8 17h3.2l1.9-5 4.1 10 1.9-5H24"
-          stroke="white"
-          strokeWidth="2.4"
-          strokeLinecap="round"
+          d="M 40 14 L 60 14 A 4 4 0 0 1 64 18 L 64 36 L 82 36 A 4 4 0 0 1 86 40 L 86 60 A 4 4 0 0 1 82 64 L 64 64 L 64 82 A 4 4 0 0 1 60 86 L 40 86 A 4 4 0 0 1 36 82 L 36 64 L 18 64 A 4 4 0 0 1 14 60 L 14 40 A 4 4 0 0 1 18 36 L 36 36 L 36 18 A 4 4 0 0 1 40 14 Z"
+          stroke="#22c55e"
+          strokeWidth="6"
           strokeLinejoin="round"
-          fill="none"
         />
+        {/* Pen — diagonal across the cross */}
+        <g transform="translate(50 50) rotate(40)">
+          <rect x="-4.5" y="-26" width="9" height="44" rx="1.5" fill="#9CA3AF" />
+          <rect x="-4.5" y="-15" width="9" height="4" fill="#6B7280" />
+          <rect x="-4.5" y="-26" width="9" height="5" fill="#6B7280" />
+          <polygon points="-4.5,18 4.5,18 0,28" fill="#4B5563" />
+          <polygon points="-1.5,24 1.5,24 0,28" fill="#FFFFFF" />
+        </g>
       </svg>
       {withWordmark && (
-        <span className="font-extrabold tracking-tight text-ink-900 text-[17px]">
-          MedScribe<span className="text-brand-600">.AI</span>
+        <span className="font-extrabold tracking-tight text-[19px] leading-none">
+          <span className="text-ink-500">Note</span>
+          <span className="text-brand-500">MD</span>
         </span>
       )}
     </div>

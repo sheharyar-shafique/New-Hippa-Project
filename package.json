@@ -1,9 +1,9 @@
 {
-  "name": "medscribe-ai",
+  "name": "notemd",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "MedScribe AI — HIPAA-compliant AI medical scribe for internal medicine (frontend MVP)",
+  "description": "NoteMD — HIPAA-compliant bilingual (ES/EN) AI medical scribe for internal medicine (frontend MVP)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

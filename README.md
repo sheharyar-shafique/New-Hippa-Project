@@ -42,6 +42,36 @@ npm run dev
 
 Open http://localhost:5173.
 
+## Deploy to Netlify
+
+This repo is wired up for Netlify out of the box.
+
+**One-click (Git):**
+1. Log in at https://app.netlify.com
+2. **Add new site → Import an existing project → GitHub**
+3. Pick `New-Hippa-Project`
+4. Netlify will auto-detect the settings from `netlify.toml`:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+   - Node: `20`
+5. **Deploy** — first build takes ~1–2 min.
+
+**CLI (alternative):**
+```bash
+npm i -g netlify-cli
+netlify login
+netlify init    # link to your Netlify team / new site
+netlify deploy --build --prod
+```
+
+### What's in `netlify.toml`
+
+- SPA fallback — every unknown path serves `/index.html` so React Router routes
+  like `/app/labs` work on direct visits and refreshes.
+- Long cache on `/assets/*` (hashed bundles).
+- Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
+  `Permissions-Policy`, `Strict-Transport-Security` — reinforces the HIPAA posture.
+
 ## Routes
 
 | Route | Page |

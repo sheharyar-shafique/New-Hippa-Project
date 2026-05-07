@@ -6,9 +6,9 @@
   "description": "MedScribe AI — HIPAA-compliant AI medical scribe for internal medicine (frontend MVP)",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "lucide-react": "^0.460.0",

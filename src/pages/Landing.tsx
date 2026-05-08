@@ -14,6 +14,9 @@ import {
   ClipboardList,
   Clock,
   ChevronRight,
+  Activity,
+  PenLine,
+  History,
 } from 'lucide-react';
 import MarketingNav from '../components/MarketingNav';
 import MarketingFooter from '../components/MarketingFooter';
@@ -28,6 +31,8 @@ export default function Landing() {
   const workflowSteps = t<{ title: string; body: string }[]>('landing.workflowSteps');
   const complianceRows =
     t<{ label: string; status: string }[]>('landing.complianceRows');
+  const moreThanItems = t<{ title: string; body: string }[]>('landing.moreThanItems');
+  const moreThanIcons = [FlaskConical, ClipboardList, Activity, Brain, PenLine, History];
   const tiers = t<any[]>('pricing.tiers');
 
   return (
@@ -61,11 +66,14 @@ export default function Landing() {
                 </Link>
               </div>
               <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-ink-500">
-                <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-brand-600" /> {t('common.noCreditCard')}
+                <span className="inline-flex items-center gap-2 text-brand-700 font-semibold">
+                  <Stethoscope className="w-4 h-4" /> {t('landing.trustSignal')}
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-brand-600" /> HIPAA + AWS BAA
+                  <ShieldCheck className="w-4 h-4 text-brand-600" /> {t('landing.heroBadgeHipaa')}
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-brand-600" /> {t('common.noCreditCard')}
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-brand-600" /> {t('common.cancelAnytime')}
@@ -176,6 +184,35 @@ export default function Landing() {
             <SmallFeature icon={ClipboardList} title={t('landing.featureCodingTitle')} body={t('landing.featureCodingBody')} />
             <SmallFeature icon={ShieldCheck} title={t('landing.featureSecurityTitle')} body={t('landing.featureSecurityBody')} />
           </div>
+        </div>
+      </section>
+
+      {/* More than transcription — clinical-copilot positioning */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="section-title">{t('landing.moreThanTag')}</span>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-ink-900 tracking-tight">
+            {t('landing.moreThanTitle')}
+          </h2>
+          <p className="mt-3 text-ink-600">{t('landing.moreThanSubtitle')}</p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {moreThanItems.map((item, i) => {
+            const Icon = moreThanIcons[i] ?? Sparkles;
+            return (
+              <div
+                key={item.title}
+                className="card p-6 hover:shadow-md transition relative overflow-hidden"
+              >
+                <div className="w-10 h-10 rounded-lg bg-brand-600 text-white flex items-center justify-center shadow-soft">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <h4 className="mt-4 font-semibold text-ink-900">{item.title}</h4>
+                <p className="mt-1.5 text-sm text-ink-600 leading-relaxed">{item.body}</p>
+                <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-brand-50 -z-0 opacity-60" />
+              </div>
+            );
+          })}
         </div>
       </section>
 

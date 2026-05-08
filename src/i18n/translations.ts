@@ -76,11 +76,13 @@ export const dict: Record<Lang, Dict> = {
       settings: 'Settings',
     },
     landing: {
-      heroTag: 'Built for Internal Medicine',
+      heroTag: 'Designed for Internal Medicine',
       heroTitleStart: 'AI medical scribe that thinks',
       heroTitleHighlight: 'like an internist.',
       heroSubtitle:
-        'Record the visit, get a clean, structured SOAP note in seconds — fluent in internal medicine terminology, ICD-10, and lab interpretation. HIPAA-compliant on AWS with BAA.',
+        'Turn patient conversations into accurate SOAP notes in seconds — trained on internal medicine workflows.',
+      trustSignal: 'Designed with physicians',
+      heroBadgeHipaa: 'HIPAA-aligned · AWS BAA',
       heroCardRecording: 'Recording · 04:21',
       heroCardPatient: 'Margaret Chen · 64 F',
       heroCardSubjective: 'Subjective',
@@ -116,6 +118,36 @@ export const dict: Record<Lang, Dict> = {
       whyTag: 'Why doctors choose NoteMD',
       whyTitle: 'Built around the way internists actually work.',
       whySubtitle: 'Less typing. Cleaner notes. More face-time with patients.',
+      moreThanTag: 'More than transcription',
+      moreThanTitle: 'A clinical copilot — not just a recorder.',
+      moreThanSubtitle:
+        'NoteMD goes beyond turning speech into text. It understands the medicine.',
+      moreThanItems: [
+        {
+          title: 'Interprets labs',
+          body: 'Reads photos and PDFs of labs, flags abnormalities, and explains what the pattern likely means.',
+        },
+        {
+          title: 'Suggests ICD-10 codes',
+          body: 'Encounter-aware coding — accept the right code with one click.',
+        },
+        {
+          title: 'Tracks chronic conditions',
+          body: 'Trends A1c, BP, eGFR, lipids over time so the assessment writes itself.',
+        },
+        {
+          title: 'Structures A/P intelligently',
+          body: 'Differentials, treatment, follow-up — written the way internists document.',
+        },
+        {
+          title: 'Learns your style',
+          body: 'Adapts to your phrasing, formatting, and templates with every visit.',
+        },
+        {
+          title: 'Longitudinal context',
+          body: 'Pulls relevant history forward so each visit reads as a continuation, not a restart.',
+        },
+      ],
       featureOneTapTitle: 'One-tap recording',
       featureOneTapBody:
         'Capture in-clinic or telehealth visits. Background noise filtering and speaker separation built-in.',
@@ -592,7 +624,9 @@ export const dict: Record<Lang, Dict> = {
       heroTitleStart: 'Escriba médico con IA que piensa',
       heroTitleHighlight: 'como un internista.',
       heroSubtitle:
-        'Grabe la consulta y obtenga una nota SOAP estructurada en segundos — fluido en terminología de medicina interna, ICD-10 e interpretación de laboratorios. Conforme a HIPAA en AWS con BAA.',
+        'Convierta las consultas en notas SOAP precisas en segundos — entrenado para flujos de medicina interna.',
+      trustSignal: 'Diseñado con médicos',
+      heroBadgeHipaa: 'Alineado con HIPAA · BAA en AWS',
       heroCardRecording: 'Grabando · 04:21',
       heroCardPatient: 'Margaret Chen · 64 F',
       heroCardSubjective: 'Subjetivo',
@@ -628,6 +662,36 @@ export const dict: Record<Lang, Dict> = {
       whyTag: 'Por qué los médicos eligen NoteMD',
       whyTitle: 'Diseñado en torno a cómo trabajan los internistas.',
       whySubtitle: 'Menos teclear. Notas más limpias. Más tiempo cara a cara con el paciente.',
+      moreThanTag: 'Más que transcripción',
+      moreThanTitle: 'Un copiloto clínico — no solo un grabador.',
+      moreThanSubtitle:
+        'NoteMD va más allá de convertir voz en texto. Entiende la medicina.',
+      moreThanItems: [
+        {
+          title: 'Interpreta laboratorios',
+          body: 'Lee fotos y PDFs de laboratorios, marca anomalías y explica qué significa el patrón.',
+        },
+        {
+          title: 'Sugiere códigos ICD-10',
+          body: 'Codificación según la consulta — acepte el código correcto con un clic.',
+        },
+        {
+          title: 'Da seguimiento a condiciones crónicas',
+          body: 'Tendencias de A1c, PA, TFG y lípidos en el tiempo para que la evaluación se escriba sola.',
+        },
+        {
+          title: 'Estructura A&P de forma inteligente',
+          body: 'Diferenciales, tratamiento, seguimiento — escrito como documentan los internistas.',
+        },
+        {
+          title: 'Aprende su estilo',
+          body: 'Se adapta a su redacción, formato y plantillas en cada consulta.',
+        },
+        {
+          title: 'Contexto longitudinal',
+          body: 'Trae la historia relevante para que cada visita se lea como continuación, no como inicio.',
+        },
+      ],
       featureOneTapTitle: 'Grabación con un toque',
       featureOneTapBody:
         'Captura visitas presenciales o de telesalud. Filtrado de ruido y separación de hablantes integrados.',

@@ -36,9 +36,9 @@ export default function Logo({
         </g>
       </svg>
       {withWordmark && (
-        <span className="font-extrabold tracking-tight text-[19px] leading-none">
-          <span className="text-ink-500">Note</span>
-          <span className="text-brand-500">MD</span>
+        <span className="font-extrabold leading-none text-[19px] tracking-[-0.035em] flex items-baseline">
+          <span className="text-ink-700">Note</span>
+          <span className="text-brand-600 ml-[1px]">MD</span>
         </span>
       )}
     </div>

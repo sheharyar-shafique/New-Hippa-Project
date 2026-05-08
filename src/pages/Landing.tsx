@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import MarketingNav from '../components/MarketingNav';
 import MarketingFooter from '../components/MarketingFooter';
+import Logo from '../components/Logo';
 import { useT } from '../i18n/LanguageProvider';
 
 export default function Landing() {
@@ -174,8 +175,11 @@ export default function Landing() {
       <section className="bg-ink-50/60 border-y border-ink-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="section-title">{t('landing.whyTag')}</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-ink-900 tracking-tight">
+            <div className="inline-flex items-center gap-2.5 flex-wrap justify-center">
+              <span className="section-title">{t('landing.whyTag')}</span>
+              <Logo size={22} />
+            </div>
+            <h2 className="mt-4 text-3xl sm:text-4xl font-bold text-ink-900 tracking-tight">
               {t('landing.whyTitle')}
             </h2>
             <p className="mt-3 text-ink-600">{t('landing.whySubtitle')}</p>

@@ -137,11 +137,16 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Trust */}
-      <section className="border-y border-ink-200/70 bg-ink-50/60 py-6">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6 items-center">
-          {['Northbridge IM', 'Riverside Clinic', 'Cedar Health', 'Atlas Primary', 'Hudson Medical', 'Bayfield Group'].map((n) => (
-            <div key={n} className="text-center text-sm font-semibold tracking-wide text-ink-400">{n}</div>
+      {/* Proof strip — honest stats, not fictional logos */}
+      <section className="border-y border-ink-200/70 bg-ink-50/60 py-8">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 items-center">
+          {t<{ value: string; label: string }[]>('landing.proofStrip').map((s) => (
+            <div key={s.label} className="text-center">
+              <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ink-900">
+                {s.value}
+              </p>
+              <p className="text-xs sm:text-sm text-ink-500 mt-1">{s.label}</p>
+            </div>
           ))}
         </div>
       </section>

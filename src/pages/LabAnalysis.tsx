@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import StatusPill from '../components/StatusPill';
+import Brandify from '../components/Brandify';
 import { MOCK_LAB_ANALYSIS } from '../lib/mockData';
 import { useT, useLang } from '../i18n/LanguageProvider';
 
@@ -72,7 +73,7 @@ export default function LabAnalysis() {
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">{t('labs.title')}</h1>
-          <p className="text-ink-600 mt-1 max-w-2xl">{t('labs.subtitle')}</p>
+          <p className="text-ink-600 mt-1 max-w-2xl"><Brandify>{t<string>('labs.subtitle')}</Brandify></p>
         </div>
         <span className="pill bg-brand-50 text-brand-700 border border-brand-100">
           <ShieldCheck className="w-3.5 h-3.5" /> {t('labs.encryptedBadge')}

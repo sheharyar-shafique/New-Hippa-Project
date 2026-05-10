@@ -3,6 +3,7 @@ import { ArrowRight, Lock, Mail, ShieldCheck, Stethoscope } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import Logo from '../components/Logo';
 import LanguageToggle from '../components/LanguageToggle';
+import Brandify from '../components/Brandify';
 import { useT } from '../i18n/LanguageProvider';
 
 export default function Login() {
@@ -58,7 +59,7 @@ export default function Login() {
               </button>
             </form>
             <p className="mt-6 text-sm text-ink-600">
-              {t('auth.newToNoteMD')}{' '}
+              <Brandify>{t<string>('auth.newToNoteMD')}</Brandify>{' '}
               <Link to="/signup" className="text-brand-700 font-semibold">{t('auth.createAccountLink')}</Link>
             </p>
           </div>

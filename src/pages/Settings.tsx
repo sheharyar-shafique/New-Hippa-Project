@@ -9,6 +9,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { initials } from '../lib/utils';
+import Brandify from '../components/Brandify';
 import { useT } from '../i18n/LanguageProvider';
 
 export default function Settings() {
@@ -252,7 +253,7 @@ function Row({
     <li className="py-3 flex items-center justify-between gap-3 flex-wrap">
       <div>
         <p className="font-semibold text-ink-900">{label}</p>
-        {sub && <p className="text-xs text-ink-500 mt-0.5">{sub}</p>}
+        {sub && <p className="text-xs text-ink-500 mt-0.5"><Brandify>{sub}</Brandify></p>}
       </div>
       <div className="flex items-center gap-3">
         <span className="pill bg-emerald-50 text-emerald-700 border border-emerald-100">

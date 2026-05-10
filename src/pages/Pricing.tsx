@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import MarketingNav from '../components/MarketingNav';
 import MarketingFooter from '../components/MarketingFooter';
+import Brandify from '../components/Brandify';
 import { useT } from '../i18n/LanguageProvider';
 
 export default function Pricing() {
@@ -65,10 +66,10 @@ export default function Pricing() {
             {faqs.map((f) => (
               <details key={f.q} className="group card p-5 open:shadow-md transition">
                 <summary className="flex items-center justify-between cursor-pointer text-ink-900 font-semibold list-none">
-                  {f.q}
+                  <span><Brandify>{f.q}</Brandify></span>
                   <span className="text-brand-600 group-open:rotate-45 transition">+</span>
                 </summary>
-                <p className="mt-3 text-ink-600 leading-relaxed">{f.a}</p>
+                <p className="mt-3 text-ink-600 leading-relaxed"><Brandify>{f.a}</Brandify></p>
               </details>
             ))}
           </div>

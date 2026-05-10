@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import Logo from '../components/Logo';
 import LanguageToggle from '../components/LanguageToggle';
+import Brandify from '../components/Brandify';
 import { useT } from '../i18n/LanguageProvider';
 
 export default function Signup() {
@@ -28,8 +29,12 @@ export default function Signup() {
         </div>
         <div className="relative flex-1 flex items-center">
           <div className="max-w-md">
-            <h2 className="text-3xl font-bold leading-snug">{t('auth.signupAsideTitle')}</h2>
-            <p className="mt-4 text-white/70 leading-relaxed">{t('auth.signupAsideBody')}</p>
+            <h2 className="text-3xl font-bold leading-snug">
+              <Brandify dark>{t<string>('auth.signupAsideTitle')}</Brandify>
+            </h2>
+            <p className="mt-4 text-white/70 leading-relaxed">
+              <Brandify dark>{t<string>('auth.signupAsideBody')}</Brandify>
+            </p>
             <ul className="mt-8 space-y-3 text-sm">
               {bullets.map((b) => (
                 <li key={b} className="flex items-start gap-2">

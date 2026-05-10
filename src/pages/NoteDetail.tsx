@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { NOTES, SoapNote } from '../lib/mockData';
 import StatusPill from '../components/StatusPill';
+import Brandify from '../components/Brandify';
 import { formatDate, formatDuration, formatTime } from '../lib/utils';
 import { useT, useLang } from '../i18n/LanguageProvider';
 
@@ -183,7 +184,7 @@ export default function NoteDetail() {
           </div>
 
           <div className="card p-5">
-            <p className="section-title">{t('note.askTitle')}</p>
+            <p className="section-title"><Brandify>{t<string>('note.askTitle')}</Brandify></p>
             <p className="text-xs text-ink-500 mt-1">{t('note.askHint')}</p>
             <div className="mt-3 space-y-2">
               {askExamples.map((q) => (

@@ -21,6 +21,7 @@ import {
 import MarketingNav from '../components/MarketingNav';
 import MarketingFooter from '../components/MarketingFooter';
 import Logo from '../components/Logo';
+import Brandify from '../components/Brandify';
 import { useT } from '../i18n/LanguageProvider';
 
 export default function Landing() {
@@ -317,7 +318,9 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto rounded-3xl bg-gradient-to-tr from-brand-700 to-brand-500 text-white p-10 sm:p-14 shadow-soft text-center">
           <Clock className="w-8 h-8 mx-auto mb-4 opacity-90" />
           <h3 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('landing.ctaTitle')}</h3>
-          <p className="mt-3 text-white/85 max-w-xl mx-auto">{t('landing.ctaBody')}</p>
+          <p className="mt-3 text-white/85 max-w-xl mx-auto">
+            <Brandify dark>{t<string>('landing.ctaBody')}</Brandify>
+          </p>
           <button onClick={() => navigate('/signup')} className="mt-7 btn bg-white text-brand-700 hover:bg-ink-50 px-6 py-3 text-base">
             {t('common.startTrial')} <ArrowRight className="w-4 h-4" />
           </button>
@@ -356,8 +359,8 @@ function FeatureBlock({
       <div className="w-11 h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-soft">
         <Icon className="w-5 h-5" />
       </div>
-      <h3 className="mt-4 text-xl font-semibold text-ink-900">{title}</h3>
-      <p className="mt-2 text-ink-600 leading-relaxed">{body}</p>
+      <h3 className="mt-4 text-xl font-semibold text-ink-900"><Brandify>{title}</Brandify></h3>
+      <p className="mt-2 text-ink-600 leading-relaxed"><Brandify>{body}</Brandify></p>
       <ul className="mt-4 space-y-2 text-sm text-ink-700">
         {bullets.map((b) => (
           <li key={b} className="flex items-start gap-2">
@@ -389,7 +392,7 @@ function Step({ n, icon: Icon, title, body }: { n: number; icon: any; title: str
         <Icon className="w-5 h-5 text-brand-700" />
       </div>
       <h4 className="mt-4 font-semibold text-ink-900">{title}</h4>
-      <p className="mt-1.5 text-sm text-ink-600 leading-relaxed">{body}</p>
+      <p className="mt-1.5 text-sm text-ink-600 leading-relaxed"><Brandify>{body}</Brandify></p>
     </div>
   );
 }

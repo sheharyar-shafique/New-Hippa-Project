@@ -49,25 +49,31 @@ npm run dev
 
 Open http://localhost:5173.
 
-## Deploy to Netlify
+## Deploy to Vercel (recommended)
 
-This repo is wired up for Netlify out of the box.
+This repo is wired up for Vercel via `vercel.json` — SPA rewrites + security
+headers are already configured.
 
 **One-click (Git):**
-1. Log in at https://app.netlify.com
-2. **Add new site → Import an existing project → GitHub**
-3. Pick `New-Hippa-Project`
-4. Netlify will auto-detect the settings from `netlify.toml` (Node 20, `npm run build`,
-   publish `dist`).
-5. **Deploy** — first build takes ~1–2 min.
+1. Log in at https://vercel.com
+2. **Add New… → Project → Import** your `New-Hippa-Project` repo from GitHub
+3. Vercel auto-detects Vite. The `vercel.json` settings take over from there:
+   - Build command: `npm run build`
+   - Output dir: `dist`
+   - Framework: Vite
+4. Click **Deploy** — first build takes ~60 seconds.
 
 **CLI (alternative):**
 ```bash
-npm i -g netlify-cli
-netlify login
-netlify init
-netlify deploy --build --prod
+npm i -g vercel
+vercel login
+vercel --prod
 ```
+
+## Deploy to Netlify (also supported)
+
+`netlify.toml` is also in the repo, so the same one-click GitHub import works
+on Netlify if you prefer.
 
 ## Project structure
 

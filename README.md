@@ -1,107 +1,136 @@
-# NoteMD — Frontend MVP
+# NoteMD
 
-A polished, **HIPAA-compliant AI medical scribe for internal medicine**, with full
-**Spanish + English** support. This is the frontend MVP (Vite + React + TypeScript +
-Tailwind) — designed for a client demo. All AI / transcription / persistence is mocked.
+**HIPAA-aligned, bilingual AI medical scribe for internal medicine.** Record a
+visit, get a clean SOAP note in seconds. Snap a lab photo, get an interpretation.
 
-## Highlights
+Frontend (React + Vite + Tailwind) and serverless backend (Vercel Functions
++ Prisma/Postgres + Anthropic Claude + OpenAI Whisper) live in one repo.
 
-- **NoteMD branding** — green medical-cross + pen logo, bilingual wordmark.
-- **Internal-medicine fluency** — SOAP notes, ICD-10/CPT helpers, IM-specific copy.
-- **Lab image analysis** — upload a photo or PDF of a lab; OCR + plain-language
-  interpretation + ranked differentials. Available in both languages.
-- **i18n with persistent toggle** — defaults to Spanish (auto-detects English browsers
-  on first load); toggle between **ES / EN** is in every nav bar; preference is
-  stored in `localStorage`.
+## Architecture
 
-## What it shows
+```
+Browser ─┬─►  Vite (React)                      ── pages, UI, ES/EN i18n
+         │
+         └─►  /api/* (Vercel Functions, Node)
+                ├── auth/{signup,login,me}      ── JWT + bcrypt
+                ├── patients, notes (CRUD)
+                ├── visits/start                ── create visit row
+                ├── visits/upload-url           ── signed Vercel Blob upload
+                ├── visits/generate             ── Whisper → Claude → SOAP
+                └── labs/analyze                ── Claude vision lab analysis
 
-- **Landing page** — hero, internal-medicine positioning, lab-image analysis pitch,
-  security posture, pricing, FAQ.
-- **Auth** — beautiful sign-in / sign-up screens, language toggle inline.
-- **Dashboard** — recent notes, time-saved stats, today's schedule.
-- **New consultation** — full recording UI (start / pause / stop, animated waveform,
-  processing state, file upload fallback) wired to a mocked SOAP draft.
-- **SOAP note detail** — editable Subjective / Objective / Assessment / Plan with
-  bilingual content per section, ICD-10 suggestions (translated), transcript,
-  "Ask NoteMD" decision-support panel.
-- **Lab analysis** — upload a photo or PDF of a lab; the demo flow shows OCR
-  confidence, an extracted results table, plain-language interpretation, ranked
-  differentials, and next steps — all bilingual.
-- **Patients** — searchable list with conditions and last visit.
-- **Settings** — profile, HIPAA / BAA status, billing, templates, notifications.
+  Postgres (Prisma)   ← all PHI rows
+  Vercel Blob         ← audio recordings + lab images
+  Anthropic Claude    ← SOAP generation + lab interpretation
+  OpenAI Whisper      ← audio → text
+```
 
-## Stack
+## Required environment variables
 
-- **Vite + React 18 + TypeScript**
-- **Tailwind CSS** with NoteMD-green palette and soft shadows
-- **React Router v6**
-- **lucide-react** icons
-- Custom lightweight **i18n** layer (no external deps) with a Context provider, a
-  `useT()` hook, and a `LanguageToggle` component.
+Copy `.env.example` → `.env` and fill in:
 
-## Run it
+| Variable | Where to get it |
+|---|---|
+| `DATABASE_URL` | https://neon.tech (free Postgres, ~30s signup) |
+| `JWT_SECRET` | Any random 48+ char string (`node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`) |
+| `ANTHROPIC_API_KEY` | https://console.anthropic.com → API keys |
+| `OPENAI_API_KEY` | https://platform.openai.com/api-keys |
+| `BLOB_READ_WRITE_TOKEN` | Vercel dashboard → Storage → Create Blob store → token |
+
+## Running locally
 
 ```bash
+# 1. Install dependencies
 npm install
-npm run dev
+
+# 2. Fill in .env (see above)
+cp .env.example .env  # edit with your keys
+
+# 3. Push the Prisma schema to your database
+npm run db:push
+
+# 4. Start everything (Vite frontend + Vercel Functions backend)
+npm i -g vercel       # one-time, if you don't have it
+vercel link           # one-time, link to your Vercel project
+vercel env pull       # syncs .env from Vercel (optional)
+vercel dev            # serves at http://localhost:3000
 ```
 
-Open http://localhost:5173.
+Or run **frontend only** (no backend, useful for UI tweaks):
 
-## Deploy to Vercel (recommended)
-
-This repo is wired up for Vercel via `vercel.json` — SPA rewrites + security
-headers are already configured.
-
-**One-click (Git):**
-1. Log in at https://vercel.com
-2. **Add New… → Project → Import** your `New-Hippa-Project` repo from GitHub
-3. Vercel auto-detects Vite. The `vercel.json` settings take over from there:
-   - Build command: `npm run build`
-   - Output dir: `dist`
-   - Framework: Vite
-4. Click **Deploy** — first build takes ~60 seconds.
-
-**CLI (alternative):**
 ```bash
-npm i -g vercel
-vercel login
-vercel --prod
+npm run dev           # http://localhost:5173, API calls will 404
 ```
 
-## Deploy to Netlify (also supported)
+## Deploying to Vercel
 
-`netlify.toml` is also in the repo, so the same one-click GitHub import works
-on Netlify if you prefer.
+1. Push this repo to GitHub.
+2. https://vercel.com/new → **Import** the repo.
+3. Add the 5 env vars under **Settings → Environment Variables**.
+4. Hit **Deploy**. First build takes ~90 seconds.
 
-## Project structure
+`vercel.json` already configures:
+- Framework: Vite
+- SPA rewrites (React Router routes work on direct visits)
+- 60s timeout for `/api/visits/generate` and `/api/labs/analyze`
+- Long cache on `/assets/*`
+- Security headers (X-Frame-Options, Permissions-Policy mic+camera, HSTS, etc.)
+
+## Project layout
 
 ```
-src/
-  main.tsx
-  App.tsx
-  index.css
-  i18n/
-    translations.ts       # ES + EN dictionaries (one source of truth)
-    LanguageProvider.tsx  # Context, useT(), useLang()
-  components/             # AppLayout, Logo, MarketingNav/Footer, StatusPill,
-                          # LanguageToggle
-  lib/                    # utils + bilingual mockData (notes, patients, labs)
-  pages/                  # Landing, Pricing, Login, Signup, Dashboard,
-                          # NewConsultation, NoteDetail, LabAnalysis,
-                          # Patients, Settings, NotFound
+api/                # Vercel serverless functions
+  auth/             # signup, login, me
+  patients/         # list, create, get, update, delete
+  notes/            # list, get, update
+  visits/           # start, upload-url, generate (Whisper + Claude)
+  labs/             # analyze (Claude vision)
+lib/                # shared backend code
+  prisma.ts         # singleton Prisma client
+  auth.ts           # JWT helpers + auth() guard
+  anthropic.ts      # Claude SDK wrapper (SOAP + vision)
+  whisper.ts        # OpenAI Whisper transcription
+  storage.ts        # Vercel Blob signed-upload + base64 fetch
+  prompts.ts        # SOAP + lab system prompts
+  http.ts           # CORS, error handling, zod parsing
+prisma/
+  schema.prisma     # User, Patient, Visit, LabAnalysis
+src/                # React frontend
+  pages/            # Landing, Login, Signup, Dashboard, NewConsultation,
+                    # NoteDetail, LabAnalysis, Patients, Settings, ...
+  components/       # AppLayout, Logo, Brandify, StatusPill, ...
+  lib/
+    api.ts          # fetch wrapper + domain types
+    AuthProvider.tsx# auth context + RequireAuth guard
+    utils.ts
+  i18n/             # ES + EN dictionaries, useT() hook
+public/
+  logo.png          # drop your NoteMD logo here (image fallback to wordmark)
+.env.example
+vercel.json
 ```
 
-## Notes for backend integration
+## What's real now
 
-Mocked surfaces that will need real APIs later:
+- **Auth** — real signup/login with bcrypt + JWT; data persists in Postgres.
+- **Patients** — CRUD with search.
+- **Recording** — real `MediaRecorder` audio capture, direct upload to Vercel
+  Blob, Whisper transcription, Claude SOAP draft, structured ICD-10 codes.
+- **Lab analysis** — real upload, Claude vision OCR + clinical interpretation
+  + ranked differentials, returned in the user's preferred language.
+- **All mock data removed.** Every page reads/writes through the API.
 
-- `POST /api/visits` — start a visit, return `visitId`
-- `POST /api/visits/:id/audio` — chunked audio upload (S3 presigned)
-- `POST /api/visits/:id/generate?lang=es|en` — returns SOAP + ICD-10 + transcript
-- `POST /api/labs/analyze?lang=es|en` — multipart image / PDF, returns OCR +
-  interpretation
-- `GET /api/patients`, `GET /api/notes`
+## Roadmap toward production HIPAA
 
-All PHI flows must run inside the AWS HIPAA-eligible boundary under BAA.
+The architecture is HIPAA-aligned today. To call yourself **HIPAA-compliant** for
+real patient data, you'll need:
+
+1. **Sign the BAA** with Anthropic, OpenAI, and Vercel (or move to AWS Bedrock
+   under your AWS BAA — same code, swap the SDK).
+2. **Risk assessment** by a third-party (Vanta, Drata, Compliancy Group).
+3. **Workforce training** + written policies (breach notification, access control).
+4. **Sign BAAs with clinic customers** before they put PHI in.
+
+## License
+
+Proprietary. © NoteMD.

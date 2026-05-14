@@ -11,6 +11,7 @@ import Patients from './pages/Patients';
 import Settings from './pages/Settings';
 import Pricing from './pages/Pricing';
 import NotFound from './pages/NotFound';
+import { RequireAuth } from './lib/AuthProvider';
 
 export default function App() {
   return (
@@ -20,7 +21,14 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
 
-      <Route path="/app" element={<AppLayout />}>
+      <Route
+        path="/app"
+        element={
+          <RequireAuth>
+            <AppLayout />
+          </RequireAuth>
+        }
+      >
         <Route index element={<Dashboard />} />
         <Route path="new" element={<NewConsultation />} />
         <Route path="notes/:id" element={<NoteDetail />} />

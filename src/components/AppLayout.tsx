@@ -10,17 +10,28 @@ import {
   Plus,
   ShieldCheck,
   HelpCircle,
+  LogOut,
 } from 'lucide-react';
 import Logo from './Logo';
 import LanguageToggle from './LanguageToggle';
 import { cn, initials } from '../lib/utils';
 import { useT } from '../i18n/LanguageProvider';
+import { useAuth } from '../lib/AuthProvider';
 
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const t = useT();
-  const doctor = { name: t<string>('common.drDefault'), role: t<string>('common.specialtyDefault') };
+  const { user, logout } = useAuth();
+  const doctor = {
+    name: user ? `Dr. ${user.firstName} ${user.lastName}` : t<string>('common.drDefault'),
+    role: user?.specialty ?? t<string>('common.specialtyDefault'),
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   const navItems = [
     { to: '/app', label: t<string>('sidebar.dashboard'), icon: LayoutDashboard, end: true },
@@ -68,10 +79,17 @@ export default function AppLayout() {
           <div className="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold">
             {initials(doctor.name)}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-ink-900 truncate">{doctor.name}</div>
             <div className="text-xs text-ink-500 truncate">{doctor.role}</div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="text-ink-400 hover:text-ink-700 p-1.5 rounded-md hover:bg-ink-50"
+            title={t<string>('common.signOut') ?? 'Sign out'}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </aside>
 

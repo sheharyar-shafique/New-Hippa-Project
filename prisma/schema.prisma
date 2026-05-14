@@ -1,0 +1,106 @@
+// NoteMD database schema
+// Run `npm run db:push` after editing this file to sync to your database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  specialty     String   @default("Internal Medicine")
+  clinic        String?
+  npi           String?
+  preferredLang String   @default("es") // "en" | "es"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patients     Patient[]
+  visits       Visit[]
+  labAnalyses  LabAnalysis[]
+}
+
+model Patient {
+  id         String   @id @default(cuid())
+  doctorId   String
+  doctor     User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  name       String
+  age        Int
+  sex        String   // "M" | "F" | "X"
+  mrn        String?
+  conditions String[] // e.g. ["HTN", "DM2"]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  visits Visit[]
+
+  @@index([doctorId])
+}
+
+model Visit {
+  id             String   @id @default(cuid())
+  doctorId       String
+  doctor         User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patientId      String
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  visitType      String   @default("In-clinic")    // "In-clinic" | "Telehealth" | "Home"
+  template       String?
+  chiefComplaint String?
+  status         String   @default("draft")        // "draft" | "finalized" | "signed"
+  language       String   @default("es")           // "en" | "es"
+
+  audioUrl       String?
+  audioMimeType  String?
+  durationSec    Int?
+  transcript     String?
+
+  // SOAP sections
+  subjective     String?
+  objective      String?
+  assessment     String?
+  plan           String?
+
+  // Suggested ICD-10 codes [{ code, label }]
+  icd10Codes     Json?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([doctorId])
+  @@index([patientId])
+}
+
+model LabAnalysis {
+  id             String   @id @default(cuid())
+  doctorId       String
+  doctor         User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patientId      String?
+
+  imageUrl       String
+  language       String   @default("es")
+  panel          String?
+  ocrConfidence  Float?
+
+  // Extracted results [{ name, value, unit, range, flag }]
+  results        Json?
+  interpretation String?
+
+  // Ranked differentials [{ label, likelihood, reasoning }]
+  differentials  Json?
+
+  // Suggested next steps: string[]
+  nextSteps      Json?
+
+  createdAt      DateTime @default(now())
+
+  @@index([doctorId])
+}

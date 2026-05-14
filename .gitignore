@@ -3,7 +3,10 @@ dist
 dist-ssr
 .env
 .env.local
+.env.*.local
 .DS_Store
 *.log
 .vscode/*
 !.vscode/extensions.json
+.vercel
+prisma/migrations/

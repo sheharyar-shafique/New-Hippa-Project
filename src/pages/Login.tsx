@@ -5,16 +5,29 @@ import Logo from '../components/Logo';
 import LanguageToggle from '../components/LanguageToggle';
 import Brandify from '../components/Brandify';
 import { useT } from '../i18n/LanguageProvider';
+import { useAuth } from '../lib/AuthProvider';
 
 export default function Login() {
   const navigate = useNavigate();
   const t = useT();
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => navigate('/app'), 600);
+    setError(null);
+    try {
+      await login(email, password);
+      navigate('/app');
+    } catch (err: any) {
+      setError(err?.message ?? 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,7 +48,14 @@ export default function Login() {
                 <label className="label">{t('auth.workEmail')}</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-                  <input className="input pl-9" type="email" placeholder="dr.reyes@clinic.com" required />
+                  <input
+                    className="input pl-9"
+                    type="email"
+                    placeholder="dr.reyes@clinic.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
               <div>
@@ -45,17 +65,26 @@ export default function Login() {
                 </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-                  <input className="input pl-9" type="password" placeholder="••••••••" required />
+                  <input
+                    className="input pl-9"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
               <label className="flex items-center gap-2 text-sm text-ink-700">
                 <input type="checkbox" className="rounded text-brand-600" defaultChecked /> {t('auth.keepSignedIn')}
               </label>
               <button type="submit" className="btn-primary w-full" disabled={loading}>
                 {loading ? t('auth.signingIn') : (<>{t('common.signIn')} <ArrowRight className="w-4 h-4" /></>)}
-              </button>
-              <button type="button" className="btn-secondary w-full">
-                {t('auth.continueSso')}
               </button>
             </form>
             <p className="mt-6 text-sm text-ink-600">

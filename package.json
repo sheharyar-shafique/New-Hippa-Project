@@ -1,27 +1,44 @@
 {
   "name": "notemd",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
-  "description": "NoteMD — HIPAA-compliant bilingual (ES/EN) AI medical scribe for internal medicine (frontend MVP)",
+  "description": "NoteMD — HIPAA-aligned bilingual (ES/EN) AI medical scribe for internal medicine",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "dev:full": "vercel dev",
+    "build": "prisma generate && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@prisma/client": "^5.22.0",
+    "@vercel/blob": "^0.27.0",
+    "@vercel/node": "^3.2.24",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.460.0",
+    "openai": "^4.73.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.27.0"
+    "react-router-dom": "^6.27.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.9.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
+    "prisma": "^5.22.0",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"

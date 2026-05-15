@@ -103,7 +103,7 @@ export type Visit = {
   chiefComplaint: string | null;
   status: 'draft' | 'finalized' | 'signed';
   language: 'en' | 'es';
-  audioUrl: string | null;
+  audioPath: string | null;
   durationSec: number | null;
   transcript: string | null;
   subjective: string | null;
@@ -133,7 +133,7 @@ export type LabAnalysis = {
   id: string;
   doctorId: string;
   patientId: string | null;
-  imageUrl: string;
+  imagePath: string;
   language: 'en' | 'es';
   panel: string | null;
   ocrConfidence: number | null;

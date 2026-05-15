@@ -1,11 +1,27 @@
-// Issues a signed Vercel Blob upload token so the browser can upload audio
-// (or a lab image) directly, bypassing the 4.5 MB function body limit.
-// The browser uses `@vercel/blob/client`'s `upload()` helper which POSTs here.
+// POST /api/visits/upload-url
+// Body: { filename, contentType?, kind?: "audio" | "lab" }
+// Query: ?kind=lab  (alternative to body.kind)
+//
+// Returns a one-time Supabase Storage signed upload URL the browser can
+// PUT to directly. Audio/image bytes never pass through this function.
+//
+// Response: { bucket, path, signedUrl, token, maxBytes }
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { HandleUploadBody } from '@vercel/blob/client';
+import { z } from 'zod';
 import { auth } from '../../lib/auth.js';
-import { handleError, handlePreflight, methodNotAllowed } from '../../lib/http.js';
-import { issueUploadToken } from '../../lib/storage.js';
+import {
+  handleError,
+  handlePreflight,
+  methodNotAllowed,
+  parseBody,
+} from '../../lib/http.js';
+import { createSignedUpload, UploadKind } from '../../lib/storage.js';
+
+const Body = z.object({
+  filename: z.string().min(1).max(255),
+  contentType: z.string().min(1).max(255).optional(),
+  kind: z.enum(['audio', 'lab']).optional(),
+});
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handlePreflight(req, res)) return;
@@ -13,13 +29,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const user = await auth(req);
-    const kind = (req.query.kind === 'lab' ? 'lab' : 'audio') as 'audio' | 'lab';
-    const jsonResponse = await issueUploadToken({
-      body: req.body as HandleUploadBody,
-      userId: user.id,
+    const body = parseBody(Body, req.body ?? {});
+    const kind: UploadKind = body.kind ?? (req.query.kind === 'lab' ? 'lab' : 'audio');
+    const upload = await createSignedUpload({
       kind,
+      userId: user.id,
+      filename: body.filename,
+      contentType: body.contentType,
     });
-    res.status(200).json(jsonResponse);
+    res.status(200).json(upload);
   } catch (err) {
     handleError(res, err);
   }

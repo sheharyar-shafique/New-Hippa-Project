@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { upload } from '@vercel/blob/client';
 import {
   Mic,
   Pause,
@@ -162,17 +161,35 @@ export default function NewConsultation() {
         language: lang,
       });
 
-      // 2) Upload the audio directly to Vercel Blob.
-      setProgress(35);
+      // 2) Get a one-time Supabase signed upload URL.
+      setProgress(30);
       setProgressLabel(lang === 'es' ? 'Subiendo audio cifrado…' : 'Uploading encrypted audio…');
-      const filename = `audio/${visit.id}.${guessExt(blobType)}`;
-      const uploaded = await upload(filename, blob, {
-        access: 'public',
-        handleUploadUrl: '/api/visits/upload-url',
+      const filename = `${visit.id}.${guessExt(blobType)}`;
+      const signed = await api.post<{
+        bucket: string;
+        path: string;
+        signedUrl: string;
+        token: string;
+      }>('/visits/upload-url', {
+        filename,
         contentType: blobType,
+        kind: 'audio',
       });
 
-      // 3) Trigger transcription + SOAP generation.
+      // 3) Upload the audio directly to Supabase Storage.
+      const putRes = await fetch(signed.signedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': blobType,
+          'x-upsert': 'true',
+        },
+        body: blob,
+      });
+      if (!putRes.ok) {
+        throw new Error(`Audio upload failed (${putRes.status})`);
+      }
+
+      // 4) Trigger transcription + SOAP generation.
       setProgress(60);
       setProgressLabel(
         lang === 'es' ? 'Transcribiendo y redactando SOAP…' : 'Transcribing and drafting SOAP…'
@@ -180,7 +197,8 @@ export default function NewConsultation() {
       setPhase('processing');
       const { visit: generated } = await api.post<{ visit: Visit }>('/visits/generate', {
         visitId: visit.id,
-        audioUrl: uploaded.url,
+        audioBucket: signed.bucket,
+        audioPath: signed.path,
         durationSec,
         mimeType: blobType,
       });

@@ -61,7 +61,9 @@ model Visit {
   status         String   @default("draft")        // "draft" | "finalized" | "signed"
   language       String   @default("es")           // "en" | "es"
 
-  audioUrl       String?
+  // Supabase Storage path inside the `audio` bucket
+  // (e.g. "userId/1700000000000-visitId.webm").
+  audioPath      String?
   audioMimeType  String?
   durationSec    Int?
   transcript     String?
@@ -88,7 +90,8 @@ model LabAnalysis {
   doctor         User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   patientId      String?
 
-  imageUrl       String
+  // Supabase Storage path inside the `labs` bucket.
+  imagePath      String
   language       String   @default("es")
   panel          String?
   ocrConfidence  Float?

@@ -1,8 +1,9 @@
 // POST /api/visits/generate
-// Body: { visitId, audioUrl, durationSec, mimeType }
-// Saves the audio URL on the visit, transcribes via Whisper, runs Claude
-// to draft the SOAP note + ICD-10 codes, persists everything, and returns
-// the updated visit.
+// Body: { visitId, audioBucket, audioPath, durationSec?, mimeType? }
+//
+// Persists the audio location on the visit, generates a short-lived signed
+// read URL, transcribes via Whisper, drafts SOAP + ICD-10 via Claude,
+// saves the result, returns the updated visit.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
 import { auth } from '../../lib/auth.js';
@@ -15,17 +16,19 @@ import {
   parseBody,
 } from '../../lib/http.js';
 import { prisma } from '../../lib/prisma.js';
+import { getSignedReadUrl } from '../../lib/storage.js';
 import { transcribeUrl } from '../../lib/whisper.js';
 
 const Body = z.object({
   visitId: z.string().min(1),
-  audioUrl: z.string().url(),
+  audioBucket: z.string().min(1),
+  audioPath: z.string().min(1),
   durationSec: z.number().int().min(0).optional(),
   mimeType: z.string().optional(),
 });
 
 export const config = {
-  // Audio transcription + Claude can take a while; bump default timeout.
+  // Whisper + Claude can take a while.
   maxDuration: 60,
 };
 
@@ -43,24 +46,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     if (!visit) throw new HttpError(404, 'Visit not found');
 
-    // Step 1 — persist audio location.
+    // 1) Persist audio location on the visit row.
     await prisma.visit.update({
       where: { id: visit.id },
       data: {
-        audioUrl: body.audioUrl,
+        audioPath: body.audioPath,
         audioMimeType: body.mimeType,
         durationSec: body.durationSec,
       },
     });
 
-    // Step 2 — transcribe audio.
+    // 2) Generate a short-lived signed read URL and hand it to Whisper.
+    const signedAudioUrl = await getSignedReadUrl(body.audioBucket, body.audioPath, 300);
     const lang = (visit.language === 'en' ? 'en' : 'es') as 'en' | 'es';
-    const transcript = await transcribeUrl(body.audioUrl, lang);
+    const transcript = await transcribeUrl(signedAudioUrl, lang);
     if (!transcript || transcript.trim().length < 4) {
       throw new HttpError(422, 'Transcription returned empty text');
     }
 
-    // Step 3 — generate SOAP note.
+    // 3) Draft the SOAP note.
     const soap = await generateSoap({
       transcript,
       lang,
@@ -72,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
-    // Step 4 — save and return.
+    // 4) Save and return.
     const updated = await prisma.visit.update({
       where: { id: visit.id },
       data: {

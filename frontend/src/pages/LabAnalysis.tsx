@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import { upload } from '@vercel/blob/client';
 import {
   FlaskConical,
   Upload,
@@ -46,13 +45,33 @@ export default function LabAnalysis() {
       setPhase('uploading');
       setProgress(15);
       setProgressLabel(lang === 'es' ? 'Subiendo imagen…' : 'Uploading image…');
-      const filename = `labs/${Date.now()}-${file.name}`;
-      const uploaded = await upload(filename, file, {
-        access: 'public',
-        handleUploadUrl: '/api/visits/upload-url?kind=lab',
+
+      // 1) Get a signed upload URL from the backend.
+      const signed = await api.post<{
+        bucket: string;
+        path: string;
+        signedUrl: string;
+        token: string;
+      }>('/visits/upload-url', {
+        filename: file.name,
         contentType: file.type || 'application/octet-stream',
+        kind: 'lab',
       });
 
+      // 2) Upload directly to Supabase Storage.
+      const putRes = await fetch(signed.signedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          'x-upsert': 'true',
+        },
+        body: file,
+      });
+      if (!putRes.ok) {
+        throw new Error(`Image upload failed (${putRes.status})`);
+      }
+
+      // 3) Run analysis.
       setPhase('analyzing');
       setProgress(55);
       setProgressLabel(
@@ -60,7 +79,11 @@ export default function LabAnalysis() {
       );
       const { analysis } = await api.post<{ analysis: LabAnalysisModel }>(
         '/labs/analyze',
-        { imageUrl: uploaded.url, language: lang }
+        {
+          imageBucket: signed.bucket,
+          imagePath: signed.path,
+          language: lang,
+        }
       );
       setAnalysis(analysis);
       setProgress(100);
@@ -205,13 +228,13 @@ export default function LabAnalysis() {
                       alt="Uploaded lab"
                       className="max-h-72 rounded-lg border border-ink-200 object-contain"
                     />
-                  ) : analysis.imageUrl ? (
-                    <img
-                      src={analysis.imageUrl}
-                      alt="Lab"
-                      className="max-h-72 rounded-lg border border-ink-200 object-contain"
-                    />
-                  ) : null}
+                  ) : (
+                    <div className="text-xs text-ink-400 italic">
+                      {lang === 'es'
+                        ? 'Imagen almacenada en Supabase Storage (cifrada)'
+                        : 'Image stored in Supabase Storage (encrypted)'}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <table className="w-full text-sm">

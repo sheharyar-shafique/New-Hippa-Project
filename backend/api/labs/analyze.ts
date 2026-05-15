@@ -1,7 +1,8 @@
 // POST /api/labs/analyze
-// Body: { imageUrl, language?, patientId? }
-// Calls Claude vision to extract values + interpret + suggest differentials.
-// Persists the analysis row and returns it.
+// Body: { imageBucket, imagePath, language?, patientId? }
+//
+// Downloads the image bytes from Supabase Storage, hands them to Claude
+// Vision (inline base64), persists the analysis row, returns it.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
 import { auth } from '../../lib/auth.js';
@@ -13,10 +14,11 @@ import {
   parseBody,
 } from '../../lib/http.js';
 import { prisma } from '../../lib/prisma.js';
-import { fetchAsBase64 } from '../../lib/storage.js';
+import { downloadAsBase64 } from '../../lib/storage.js';
 
 const Body = z.object({
-  imageUrl: z.string().url(),
+  imageBucket: z.string().min(1),
+  imagePath: z.string().min(1),
   patientId: z.string().optional().nullable(),
   language: z.enum(['en', 'es']).optional(),
 });
@@ -35,13 +37,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const lang = (body.language ?? user.preferredLang) === 'en' ? 'en' : 'es';
 
-    // Fetch the image bytes from blob storage and pass to Claude as base64.
-    // PDFs aren't supported by Claude vision directly — clients should
-    // upload an image. (Future: convert PDF page 1 to image server-side.)
-    const { base64, mimeType } = await fetchAsBase64(body.imageUrl);
+    // Fetch bytes from Supabase Storage and pass as inline base64 to Claude.
+    // Claude vision accepts JPG/PNG/WEBP/HEIC; PDFs aren't supported directly.
+    const { base64, mimeType } = await downloadAsBase64(body.imageBucket, body.imagePath);
     if (!mimeType.startsWith('image/')) {
       return res.status(415).json({
-        error: 'Only image formats are supported for direct analysis. Please upload JPG, PNG, WEBP, or HEIC.',
+        error:
+          'Only image formats are supported (JPG, PNG, WEBP, HEIC).',
       });
     }
 
@@ -55,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       data: {
         doctorId: user.id,
         patientId: body.patientId ?? null,
-        imageUrl: body.imageUrl,
+        imagePath: body.imagePath,
         language: lang,
         panel: analysis.panel,
         ocrConfidence: analysis.ocrConfidence,

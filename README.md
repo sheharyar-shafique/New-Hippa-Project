@@ -36,7 +36,7 @@ Vercel project env vars).
 - JWT auth (bcrypt + jsonwebtoken)
 - Anthropic Claude — SOAP notes + lab image interpretation
 - OpenAI Whisper — audio transcription
-- Vercel Blob — encrypted audio + lab image storage
+- Supabase Storage — private buckets, signed upload + read URLs for audio + lab images
 - Zod request validation
 
 ## What you need to get from me (env vars)
@@ -50,7 +50,8 @@ Vercel project env vars).
 | `JWT_SECRET`             | Any 48+ char random string. Generate: `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"` |
 | `ANTHROPIC_API_KEY`      | https://console.anthropic.com → API keys                                                 |
 | `OPENAI_API_KEY`         | https://platform.openai.com/api-keys                                                     |
-| `BLOB_READ_WRITE_TOKEN`  | Vercel dashboard → Storage → Create Blob Store → copy the RW token                       |
+| `SUPABASE_URL`           | Supabase → Project Settings → API → Project URL                                          |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → service_role secret (server-side only)            |
 | `ALLOWED_ORIGIN`         | Your frontend URL — comma-separate multiple (e.g. `https://notemd.vercel.app,http://localhost:5173`) |
 
 ### Frontend (`frontend/.env`)
@@ -73,8 +74,19 @@ Vercel project env vars).
    Replace `[YOUR-PASSWORD]` in each with the password you set in step 2.
 6. Paste them into `backend/.env` as `DATABASE_URL` and `DIRECT_URL` respectively.
 
-> No additional Supabase keys needed — we use Postgres directly via Prisma.
-> Auth is JWT-based on our own backend, and file storage is Vercel Blob.
+### Then grab Supabase Storage credentials
+
+7. **Project Settings → API**
+   - Copy **Project URL** → `SUPABASE_URL`
+   - Copy the **service_role** secret → `SUPABASE_SERVICE_ROLE_KEY`
+8. **Storage → New bucket** (twice)
+   - Name: `audio`, **Public: OFF**
+   - Name: `labs`, **Public: OFF**
+
+Auth (JWT) and Postgres queries (Prisma) stay on our own backend — we don't
+use Supabase Auth or the Supabase JS client in the browser. The
+`service_role` key is read **only** by serverless functions to mint signed
+upload/read URLs.
 
 ## Run locally
 
@@ -132,28 +144,30 @@ GET    /api/notes/[id]
 PATCH  /api/notes/[id]         (update SOAP sections, status, icd10Codes)
 
 POST   /api/visits/start       { patientId, visitType, language }      → visit row
-POST   /api/visits/upload-url  signed direct-upload tokens (audio + lab)
-POST   /api/visits/generate    { visitId, audioUrl, durationSec? }     → SOAP + ICD-10
+POST   /api/visits/upload-url  { filename, contentType?, kind? }       → Supabase signed upload
+POST   /api/visits/generate    { visitId, audioBucket, audioPath, … }  → SOAP + ICD-10
 
-POST   /api/labs/analyze       { imageUrl, language }                  → interpretation + differentials
+POST   /api/labs/analyze       { imageBucket, imagePath, language }    → interpretation + differentials
 ```
 
 All authed endpoints require `Authorization: Bearer <JWT>` from `/api/auth/login`.
 
 ## Architecture notes (for the HIPAA-aligned roadmap)
 
-- All PHI is encrypted in transit (HTTPS / TLS 1.2+) and at rest (Supabase +
-  Vercel Blob encrypt by default). Audio + lab images live in Vercel Blob; only
-  signed URLs are stored in Postgres.
+- All PHI is encrypted in transit (HTTPS / TLS 1.2+) and at rest (Supabase
+  encrypts all storage by default). Audio + lab images live in Supabase
+  Storage **private** buckets; only the storage path is persisted in
+  Postgres. Anything that needs to read the file mints a short-lived signed
+  read URL (5 minutes default) — never a public URL.
 - Auth tokens are JWTs with configurable expiry; we never store plaintext
   passwords (bcrypt hashing with cost 12).
 - For a real HIPAA-compliant production deployment you'd:
-  1. Sign a BAA with each subprocessor: AWS (Supabase runs on AWS), Vercel,
+  1. Sign a BAA with each subprocessor: Supabase (Team plan), Vercel,
      Anthropic, OpenAI.
-  2. Enable Supabase point-in-time recovery + row-level security policies.
-  3. Move storage from Vercel Blob → AWS S3 under BAA, or use Supabase Storage.
-  4. Complete a third-party HIPAA risk assessment.
-  5. Sign a BAA with every clinic that uses NoteMD.
+  2. Enable Supabase point-in-time recovery + row-level security policies on
+     all tables and storage buckets.
+  3. Complete a third-party HIPAA risk assessment.
+  4. Sign a BAA with every clinic that uses NoteMD.
 
 ## License
 

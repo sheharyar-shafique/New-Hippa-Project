@@ -1,136 +1,160 @@
 # NoteMD
 
-**HIPAA-aligned, bilingual AI medical scribe for internal medicine.** Record a
-visit, get a clean SOAP note in seconds. Snap a lab photo, get an interpretation.
+HIPAA-aligned, bilingual (Spanish + English) AI medical scribe for internal medicine.
+Records consultations → drafts SOAP notes → suggests ICD-10 codes → analyses
+lab images. Built around how internists actually document.
 
-Frontend (React + Vite + Tailwind) and serverless backend (Vercel Functions
-+ Prisma/Postgres + Anthropic Claude + OpenAI Whisper) live in one repo.
-
-## Architecture
+## Repo layout
 
 ```
-Browser ─┬─►  Vite (React)                      ── pages, UI, ES/EN i18n
-         │
-         └─►  /api/* (Vercel Functions, Node)
-                ├── auth/{signup,login,me}      ── JWT + bcrypt
-                ├── patients, notes (CRUD)
-                ├── visits/start                ── create visit row
-                ├── visits/upload-url           ── signed Vercel Blob upload
-                ├── visits/generate             ── Whisper → Claude → SOAP
-                └── labs/analyze                ── Claude vision lab analysis
-
-  Postgres (Prisma)   ← all PHI rows
-  Vercel Blob         ← audio recordings + lab images
-  Anthropic Claude    ← SOAP generation + lab interpretation
-  OpenAI Whisper      ← audio → text
+.
+├── frontend/      Vite + React + TS + Tailwind UI (deploys as a static site)
+└── backend/       Vercel Serverless Functions (TypeScript) + Prisma + Supabase
 ```
 
-## Required environment variables
+Frontend and backend are two independent Vercel projects pointing at the
+same GitHub repo, each with its own **Root Directory**:
 
-Copy `.env.example` → `.env` and fill in:
+| Vercel project   | Root Directory | Becomes              |
+| ---------------- | -------------- | -------------------- |
+| `notemd`         | `frontend`     | `notemd.vercel.app`  |
+| `notemd-api`     | `backend`      | `notemd-api.vercel.app` |
 
-| Variable | Where to get it |
-|---|---|
-| `DATABASE_URL` | https://neon.tech (free Postgres, ~30s signup) |
-| `JWT_SECRET` | Any random 48+ char string (`node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`) |
-| `ANTHROPIC_API_KEY` | https://console.anthropic.com → API keys |
-| `OPENAI_API_KEY` | https://platform.openai.com/api-keys |
-| `BLOB_READ_WRITE_TOKEN` | Vercel dashboard → Storage → Create Blob store → token |
+The frontend talks to the backend via `VITE_API_BASE` (set in the frontend's
+Vercel project env vars).
 
-## Running locally
+## Stack
+
+**Frontend**
+- Vite + React 18 + TypeScript + Tailwind CSS
+- React Router v6
+- Custom i18n (ES default, EN toggle, persisted)
+- `@vercel/blob` for direct-to-storage uploads
+
+**Backend** (Vercel Serverless Functions)
+- Prisma ORM + Supabase Postgres
+- JWT auth (bcrypt + jsonwebtoken)
+- Anthropic Claude — SOAP notes + lab image interpretation
+- OpenAI Whisper — audio transcription
+- Vercel Blob — encrypted audio + lab image storage
+- Zod request validation
+
+## What you need to get from me (env vars)
+
+### Backend (`backend/.env`)
+
+| Variable                 | Where to get it                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `DATABASE_URL`           | Supabase → Connect → ORMs → Prisma → **Transaction pooler** URL (port 6543)              |
+| `DIRECT_URL`             | Supabase → Connect → ORMs → Prisma → **Direct connection** URL (port 5432)               |
+| `JWT_SECRET`             | Any 48+ char random string. Generate: `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"` |
+| `ANTHROPIC_API_KEY`      | https://console.anthropic.com → API keys                                                 |
+| `OPENAI_API_KEY`         | https://platform.openai.com/api-keys                                                     |
+| `BLOB_READ_WRITE_TOKEN`  | Vercel dashboard → Storage → Create Blob Store → copy the RW token                       |
+| `ALLOWED_ORIGIN`         | Your frontend URL — comma-separate multiple (e.g. `https://notemd.vercel.app,http://localhost:5173`) |
+
+### Frontend (`frontend/.env`)
+
+| Variable            | Value                                                                |
+| ------------------- | -------------------------------------------------------------------- |
+| `VITE_API_BASE`     | Your backend URL + `/api` (e.g. `https://notemd-api.vercel.app/api`) |
+| `VITE_DEFAULT_LANG` | `es` (default) or `en`                                               |
+
+---
+
+## Set up Supabase (one-time, ~2 minutes)
+
+1. Sign up / sign in at **https://supabase.com** → **New project**
+2. Pick a project name, a **strong database password** (save it — you'll need it
+   in the URLs), and a region close to your Vercel region.
+3. Wait ~60 seconds for the project to provision.
+4. Top of the dashboard → click **Connect** → **ORMs** tab → **Prisma**
+5. Copy both the **transaction pooler** URL and the **direct connection** URL.
+   Replace `[YOUR-PASSWORD]` in each with the password you set in step 2.
+6. Paste them into `backend/.env` as `DATABASE_URL` and `DIRECT_URL` respectively.
+
+> No additional Supabase keys needed — we use Postgres directly via Prisma.
+> Auth is JWT-based on our own backend, and file storage is Vercel Blob.
+
+## Run locally
 
 ```bash
-# 1. Install dependencies
+# 1. Backend
+cd backend
+cp .env.example .env          # fill in real values
 npm install
+npm run db:push               # create the tables in Supabase
+npm run dev                   # vercel dev — defaults to http://localhost:3000
 
-# 2. Fill in .env (see above)
-cp .env.example .env  # edit with your keys
-
-# 3. Push the Prisma schema to your database
-npm run db:push
-
-# 4. Start everything (Vite frontend + Vercel Functions backend)
-npm i -g vercel       # one-time, if you don't have it
-vercel link           # one-time, link to your Vercel project
-vercel env pull       # syncs .env from Vercel (optional)
-vercel dev            # serves at http://localhost:3000
+# 2. Frontend (in a second terminal)
+cd frontend
+cp .env.example .env          # set VITE_API_BASE=http://localhost:3000/api
+npm install
+npm run dev                   # vite — defaults to http://localhost:5173
 ```
 
-Or run **frontend only** (no backend, useful for UI tweaks):
+Open http://localhost:5173 — sign up, then start using the app.
 
-```bash
-npm run dev           # http://localhost:5173, API calls will 404
+## Deploy
+
+### Backend
+1. https://vercel.com/new → import the GitHub repo
+2. **Root Directory:** `backend`
+3. **Framework Preset:** Other
+4. Add all `backend/.env` variables in **Environment Variables**
+5. Deploy
+6. After deploy, run migrations once: in **Deployments → … → Redeploy → run
+   `npm run db:push`** (or run it locally pointing at the prod `DATABASE_URL`)
+
+### Frontend
+1. https://vercel.com/new → import the GitHub repo again (same repo, second project)
+2. **Root Directory:** `frontend`
+3. Vercel auto-detects Vite
+4. Add `VITE_API_BASE=https://YOUR-BACKEND.vercel.app/api` in env vars
+5. Deploy
+6. Copy the deployed frontend URL and add it to the backend's `ALLOWED_ORIGIN` env
+
+## API surface (backend)
+
+```
+POST   /api/auth/signup        { firstName, lastName, email, password, specialty?, preferredLang? }
+POST   /api/auth/login         { email, password }
+GET    /api/auth/me
+
+GET    /api/patients
+POST   /api/patients           { name, age, sex, mrn?, conditions? }
+GET    /api/patients/[id]
+PATCH  /api/patients/[id]
+DELETE /api/patients/[id]
+
+GET    /api/notes
+GET    /api/notes/[id]
+PATCH  /api/notes/[id]         (update SOAP sections, status, icd10Codes)
+
+POST   /api/visits/start       { patientId, visitType, language }      → visit row
+POST   /api/visits/upload-url  signed direct-upload tokens (audio + lab)
+POST   /api/visits/generate    { visitId, audioUrl, durationSec? }     → SOAP + ICD-10
+
+POST   /api/labs/analyze       { imageUrl, language }                  → interpretation + differentials
 ```
 
-## Deploying to Vercel
+All authed endpoints require `Authorization: Bearer <JWT>` from `/api/auth/login`.
 
-1. Push this repo to GitHub.
-2. https://vercel.com/new → **Import** the repo.
-3. Add the 5 env vars under **Settings → Environment Variables**.
-4. Hit **Deploy**. First build takes ~90 seconds.
+## Architecture notes (for the HIPAA-aligned roadmap)
 
-`vercel.json` already configures:
-- Framework: Vite
-- SPA rewrites (React Router routes work on direct visits)
-- 60s timeout for `/api/visits/generate` and `/api/labs/analyze`
-- Long cache on `/assets/*`
-- Security headers (X-Frame-Options, Permissions-Policy mic+camera, HSTS, etc.)
-
-## Project layout
-
-```
-api/                # Vercel serverless functions
-  auth/             # signup, login, me
-  patients/         # list, create, get, update, delete
-  notes/            # list, get, update
-  visits/           # start, upload-url, generate (Whisper + Claude)
-  labs/             # analyze (Claude vision)
-lib/                # shared backend code
-  prisma.ts         # singleton Prisma client
-  auth.ts           # JWT helpers + auth() guard
-  anthropic.ts      # Claude SDK wrapper (SOAP + vision)
-  whisper.ts        # OpenAI Whisper transcription
-  storage.ts        # Vercel Blob signed-upload + base64 fetch
-  prompts.ts        # SOAP + lab system prompts
-  http.ts           # CORS, error handling, zod parsing
-prisma/
-  schema.prisma     # User, Patient, Visit, LabAnalysis
-src/                # React frontend
-  pages/            # Landing, Login, Signup, Dashboard, NewConsultation,
-                    # NoteDetail, LabAnalysis, Patients, Settings, ...
-  components/       # AppLayout, Logo, Brandify, StatusPill, ...
-  lib/
-    api.ts          # fetch wrapper + domain types
-    AuthProvider.tsx# auth context + RequireAuth guard
-    utils.ts
-  i18n/             # ES + EN dictionaries, useT() hook
-public/
-  logo.png          # drop your NoteMD logo here (image fallback to wordmark)
-.env.example
-vercel.json
-```
-
-## What's real now
-
-- **Auth** — real signup/login with bcrypt + JWT; data persists in Postgres.
-- **Patients** — CRUD with search.
-- **Recording** — real `MediaRecorder` audio capture, direct upload to Vercel
-  Blob, Whisper transcription, Claude SOAP draft, structured ICD-10 codes.
-- **Lab analysis** — real upload, Claude vision OCR + clinical interpretation
-  + ranked differentials, returned in the user's preferred language.
-- **All mock data removed.** Every page reads/writes through the API.
-
-## Roadmap toward production HIPAA
-
-The architecture is HIPAA-aligned today. To call yourself **HIPAA-compliant** for
-real patient data, you'll need:
-
-1. **Sign the BAA** with Anthropic, OpenAI, and Vercel (or move to AWS Bedrock
-   under your AWS BAA — same code, swap the SDK).
-2. **Risk assessment** by a third-party (Vanta, Drata, Compliancy Group).
-3. **Workforce training** + written policies (breach notification, access control).
-4. **Sign BAAs with clinic customers** before they put PHI in.
+- All PHI is encrypted in transit (HTTPS / TLS 1.2+) and at rest (Supabase +
+  Vercel Blob encrypt by default). Audio + lab images live in Vercel Blob; only
+  signed URLs are stored in Postgres.
+- Auth tokens are JWTs with configurable expiry; we never store plaintext
+  passwords (bcrypt hashing with cost 12).
+- For a real HIPAA-compliant production deployment you'd:
+  1. Sign a BAA with each subprocessor: AWS (Supabase runs on AWS), Vercel,
+     Anthropic, OpenAI.
+  2. Enable Supabase point-in-time recovery + row-level security policies.
+  3. Move storage from Vercel Blob → AWS S3 under BAA, or use Supabase Storage.
+  4. Complete a third-party HIPAA risk assessment.
+  5. Sign a BAA with every clinic that uses NoteMD.
 
 ## License
 
-Proprietary. © NoteMD.
+Proprietary — © 2026 NoteMD. All rights reserved.

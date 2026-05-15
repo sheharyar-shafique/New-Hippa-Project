@@ -4,12 +4,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
-  "functions": {
-    "api/visits/generate.ts": { "maxDuration": 60 },
-    "api/labs/analyze.ts":    { "maxDuration": 60 }
-  },
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/" }
+    { "source": "/(.*)", "destination": "/" }
   ],
   "headers": [
     {

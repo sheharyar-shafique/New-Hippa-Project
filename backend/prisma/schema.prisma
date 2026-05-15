@@ -6,8 +6,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Supabase: transaction pooler (port 6543) for runtime queries.
+  url       = env("DATABASE_URL")
+  // Supabase: direct connection (port 5432) for migrations only.
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

@@ -1,12 +1,24 @@
-node_modules
-dist
-dist-ssr
+# Dependencies & build output (in either subfolder)
+**/node_modules
+**/dist
+**/dist-ssr
+**/.vercel
+**/.next
+
+# Local environment files — NEVER commit
 .env
 .env.local
 .env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Prisma generated migrations (we use `db:push` in dev; manage migrations
+# manually in production).
+**/prisma/migrations/
+
+# OS / editor cruft
 .DS_Store
 *.log
 .vscode/*
 !.vscode/extensions.json
-.vercel
-prisma/migrations/

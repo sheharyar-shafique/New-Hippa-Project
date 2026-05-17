@@ -14,6 +14,7 @@ type AuthCtx = {
   user: AuthedUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthedUser>;
+  verify2fa: (tempToken: string, code: string) => Promise<AuthedUser>;
   signup: (input: SignupInput) => Promise<AuthedUser>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -56,9 +57,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const login = useCallback(async (email: string, password: string) => {
+    const res = await api.post<any>('/auth/login', { email, password });
+    if (res.requires2fa) {
+      // Throw a special error that the Login page can catch
+      const err: any = new Error('2FA required');
+      err.requires2fa = true;
+      err.tempToken = res.tempToken;
+      throw err;
+    }
+    setToken(res.token);
+    setUser(res.user);
+    return res.user as AuthedUser;
+  }, []);
+
+  const verify2fa = useCallback(async (tempToken: string, code: string) => {
     const { user, token } = await api.post<{ user: AuthedUser; token: string }>(
-      '/auth/login',
-      { email, password }
+      '/auth/2fa/verify',
+      { tempToken, code }
     );
     setToken(token);
     setUser(user);
@@ -81,8 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthCtx>(
-    () => ({ user, loading, login, signup, logout, refresh }),
-    [user, loading, login, signup, logout, refresh]
+    () => ({ user, loading, login, verify2fa, signup, logout, refresh }),
+    [user, loading, login, verify2fa, signup, logout, refresh]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

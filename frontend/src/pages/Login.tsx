@@ -10,11 +10,16 @@ import { useAuth } from '../lib/AuthProvider';
 export default function Login() {
   const navigate = useNavigate();
   const t = useT();
-  const { login } = useAuth();
+  const { login, verify2fa } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // 2FA state
+  const [show2fa, setShow2fa] = useState(false);
+  const [tempToken, setTempToken] = useState('');
+  const [totpCode, setTotpCode] = useState('');
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,7 +29,26 @@ export default function Login() {
       await login(email, password);
       navigate('/app');
     } catch (err: any) {
-      setError(err?.message ?? 'Login failed');
+      if (err?.requires2fa) {
+        setTempToken(err.tempToken);
+        setShow2fa(true);
+      } else {
+        setError(err?.message ?? 'Login failed');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const on2faSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await verify2fa(tempToken, totpCode);
+      navigate('/app');
+    } catch (err: any) {
+      setError(err?.message ?? 'Invalid code');
     } finally {
       setLoading(false);
     }
@@ -39,58 +63,108 @@ export default function Login() {
         </div>
         <div className="flex-1 flex items-center">
           <div className="w-full max-w-md mx-auto">
-            <h1 className="text-3xl font-bold tracking-tight text-ink-900">
-              {t('auth.loginTitle')}
-            </h1>
-            <p className="mt-2 text-ink-600">{t('auth.loginSubtitle')}</p>
-            <form onSubmit={onSubmit} className="mt-8 space-y-4">
-              <div>
-                <label className="label">{t('auth.workEmail')}</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-                  <input
-                    className="input pl-9"
-                    type="email"
-                    placeholder="dr.reyes@clinic.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+            {show2fa ? (
+              <>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-brand-600" />
+                  </div>
+                  <h1 className="text-3xl font-bold tracking-tight text-ink-900">
+                    Two-factor authentication
+                  </h1>
                 </div>
-              </div>
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="label">{t('auth.password')}</label>
-                  <a href="#" className="text-xs text-brand-700 font-semibold">{t('auth.forgot')}</a>
-                </div>
-                <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-                  <input
-                    className="input pl-9"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                  {error}
+                <p className="mt-2 text-ink-600">
+                  Enter the 6-digit code from your authenticator app.
                 </p>
-              )}
-              <label className="flex items-center gap-2 text-sm text-ink-700">
-                <input type="checkbox" className="rounded text-brand-600" defaultChecked /> {t('auth.keepSignedIn')}
-              </label>
-              <button type="submit" className="btn-primary w-full" disabled={loading}>
-                {loading ? t('auth.signingIn') : (<>{t('common.signIn')} <ArrowRight className="w-4 h-4" /></>)}
-              </button>
-            </form>
-            <p className="mt-6 text-sm text-ink-600">
-              <Brandify>{t<string>('auth.newToNoteMD')}</Brandify>{' '}
-              <Link to="/signup" className="text-brand-700 font-semibold">{t('auth.createAccountLink')}</Link>
-            </p>
+                <form onSubmit={on2faSubmit} className="mt-8 space-y-4">
+                  <div>
+                    <label className="label">Verification code</label>
+                    <input
+                      className="input text-center text-2xl tracking-[0.5em] font-mono"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      placeholder="000000"
+                      value={totpCode}
+                      onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      autoFocus
+                      required
+                    />
+                  </div>
+                  {error && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      {error}
+                    </p>
+                  )}
+                  <button type="submit" className="btn-primary w-full" disabled={loading || totpCode.length !== 6}>
+                    {loading ? 'Verifying…' : (<>Verify <ArrowRight className="w-4 h-4" /></>)}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost w-full"
+                    onClick={() => { setShow2fa(false); setTotpCode(''); setError(null); }}
+                  >
+                    ← Back to login
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <h1 className="text-3xl font-bold tracking-tight text-ink-900">
+                  {t('auth.loginTitle')}
+                </h1>
+                <p className="mt-2 text-ink-600">{t('auth.loginSubtitle')}</p>
+                <form onSubmit={onSubmit} className="mt-8 space-y-4">
+                  <div>
+                    <label className="label">{t('auth.workEmail')}</label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+                      <input
+                        className="input pl-9"
+                        type="email"
+                        placeholder="dr.reyes@clinic.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="label">{t('auth.password')}</label>
+                      <a href="#" className="text-xs text-brand-700 font-semibold">{t('auth.forgot')}</a>
+                    </div>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+                      <input
+                        className="input pl-9"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  {error && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      {error}
+                    </p>
+                  )}
+                  <label className="flex items-center gap-2 text-sm text-ink-700">
+                    <input type="checkbox" className="rounded text-brand-600" defaultChecked /> {t('auth.keepSignedIn')}
+                  </label>
+                  <button type="submit" className="btn-primary w-full" disabled={loading}>
+                    {loading ? t('auth.signingIn') : (<>{t('common.signIn')} <ArrowRight className="w-4 h-4" /></>)}
+                  </button>
+                </form>
+                <p className="mt-6 text-sm text-ink-600">
+                  <Brandify>{t<string>('auth.newToNoteMD')}</Brandify>{' '}
+                  <Link to="/signup" className="text-brand-700 font-semibold">{t('auth.createAccountLink')}</Link>
+                </p>
+              </>
+            )}
           </div>
         </div>
         <p className="text-xs text-ink-400">{t('auth.protectedNote')}</p>

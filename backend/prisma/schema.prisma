@@ -23,6 +23,8 @@ model User {
   clinic        String?
   npi           String?
   preferredLang String   @default("es") // "en" | "es"
+  totpSecret    String?  // TOTP secret for 2FA (null = not set up)
+  totpEnabled   Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

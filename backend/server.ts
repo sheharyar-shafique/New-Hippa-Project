@@ -15,6 +15,10 @@ import visitsStart from './api/visits/start.js';
 import visitsUploadUrl from './api/visits/upload-url.js';
 import visitsGenerate from './api/visits/generate.js';
 import labsAnalyze from './api/labs/analyze.js';
+import twoFaSetup from './api/auth/2fa/setup.js';
+import twoFaEnable from './api/auth/2fa/enable.js';
+import twoFaDisable from './api/auth/2fa/disable.js';
+import twoFaVerify from './api/auth/2fa/verify.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
@@ -40,6 +44,10 @@ function adapt(handler: Function) {
 app.all('/api/auth/signup', adapt(authSignup));
 app.all('/api/auth/login', adapt(authLogin));
 app.all('/api/auth/me', adapt(authMe));
+app.all('/api/auth/2fa/setup', adapt(twoFaSetup));
+app.all('/api/auth/2fa/enable', adapt(twoFaEnable));
+app.all('/api/auth/2fa/disable', adapt(twoFaDisable));
+app.all('/api/auth/2fa/verify', adapt(twoFaVerify));
 
 // Patients
 app.all('/api/patients', adapt(patientsIndex));

@@ -44,6 +44,7 @@ export type AuthedUser = {
   preferredLang: string;
   clinic: string | null;
   npi: string | null;
+  totpEnabled: boolean;
 };
 
 /**
@@ -69,6 +70,7 @@ export async function auth(req: VercelRequest): Promise<AuthedUser> {
       preferredLang: true,
       clinic: true,
       npi: true,
+      totpEnabled: true,
     },
   });
   if (!user) throw new HttpError(401, 'User no longer exists');

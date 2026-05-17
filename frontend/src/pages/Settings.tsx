@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { api } from '../lib/api';
+import { useAuth } from '../lib/AuthProvider';
 import {
   User,
   Bell,
@@ -90,8 +92,67 @@ function ProfileTab() {
 
 function SecurityTab() {
   const t = useT();
+  const { user, refresh } = useAuth();
   const rows = t<{ label: string; status: string; sub?: string; action?: string }[]>('settings.hipaaRows');
   const toggles = t<{ label: string; body: string }[]>('settings.toggles');
+
+  // 2FA state
+  const [setting2fa, setSetting2fa] = useState(false);
+  const [totpUri, setTotpUri] = useState('');
+  const [totpSecret, setTotpSecret] = useState('');
+  const [code, setCode] = useState('');
+  const [disableCode, setDisableCode] = useState('');
+  const [showDisable, setShowDisable] = useState(false);
+  const [tfaError, setTfaError] = useState<string | null>(null);
+  const [tfaLoading, setTfaLoading] = useState(false);
+
+  const is2faEnabled = user?.totpEnabled ?? false;
+
+  const startSetup = async () => {
+    setTfaLoading(true);
+    setTfaError(null);
+    try {
+      const { secret, uri } = await api.post<{ secret: string; uri: string }>('/auth/2fa/setup', {});
+      setTotpSecret(secret);
+      setTotpUri(uri);
+      setSetting2fa(true);
+    } catch (err: any) {
+      setTfaError(err?.message ?? 'Failed to start 2FA setup');
+    } finally {
+      setTfaLoading(false);
+    }
+  };
+
+  const confirmEnable = async () => {
+    setTfaLoading(true);
+    setTfaError(null);
+    try {
+      await api.post('/auth/2fa/enable', { code });
+      await refresh();
+      setSetting2fa(false);
+      setCode('');
+    } catch (err: any) {
+      setTfaError(err?.message ?? 'Invalid code');
+    } finally {
+      setTfaLoading(false);
+    }
+  };
+
+  const confirmDisable = async () => {
+    setTfaLoading(true);
+    setTfaError(null);
+    try {
+      await api.post('/auth/2fa/disable', { code: disableCode });
+      await refresh();
+      setShowDisable(false);
+      setDisableCode('');
+    } catch (err: any) {
+      setTfaError(err?.message ?? 'Invalid code');
+    } finally {
+      setTfaLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="card p-6">
@@ -101,6 +162,88 @@ function SecurityTab() {
             <Row key={r.label} {...r} />
           ))}
         </ul>
+      </div>
+
+      <div className="card p-6">
+        <p className="section-title">Two-Factor Authentication (2FA)</p>
+        <p className="mt-1 text-sm text-ink-600">
+          Add an extra layer of security with a time-based one-time password (TOTP).
+        </p>
+
+        {tfaError && (
+          <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            {tfaError}
+          </p>
+        )}
+
+        {is2faEnabled && !showDisable && (
+          <div className="mt-4 flex items-center gap-3">
+            <span className="pill bg-emerald-50 text-emerald-700 border border-emerald-100">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Enabled
+            </span>
+            <button className="btn-ghost text-sm text-red-600 hover:bg-red-50" onClick={() => { setShowDisable(true); setTfaError(null); }}>
+              Disable 2FA
+            </button>
+          </div>
+        )}
+
+        {is2faEnabled && showDisable && (
+          <div className="mt-4 p-4 rounded-xl border border-red-200 bg-red-50/50 space-y-3">
+            <p className="text-sm font-semibold text-red-800">Enter your current authenticator code to disable 2FA:</p>
+            <input
+              className="input text-center text-lg tracking-[0.3em] font-mono max-w-[200px]"
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+              value={disableCode}
+              onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+            <div className="flex gap-2">
+              <button className="btn-ghost text-sm" onClick={() => { setShowDisable(false); setTfaError(null); }}>Cancel</button>
+              <button className="btn-primary text-sm bg-red-600 hover:bg-red-700" disabled={tfaLoading || disableCode.length !== 6} onClick={confirmDisable}>
+                {tfaLoading ? 'Disabling…' : 'Disable 2FA'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!is2faEnabled && !setting2fa && (
+          <button className="mt-4 btn-primary text-sm" onClick={startSetup} disabled={tfaLoading}>
+            {tfaLoading ? 'Setting up…' : 'Enable 2FA'}
+          </button>
+        )}
+
+        {!is2faEnabled && setting2fa && (
+          <div className="mt-4 p-4 rounded-xl border border-brand-200 bg-brand-50/30 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-ink-900">1. Scan this in your authenticator app</p>
+              <p className="text-xs text-ink-500 mt-1">Google Authenticator, Authy, or 1Password</p>
+              <div className="mt-3 p-3 bg-white rounded-lg border border-ink-200 break-all text-xs font-mono text-ink-700 select-all">
+                {totpUri}
+              </div>
+              <p className="mt-2 text-xs text-ink-500">Or manually enter this secret: <code className="font-mono bg-ink-100 px-1 py-0.5 rounded select-all">{totpSecret}</code></p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-ink-900">2. Enter the 6-digit code to verify</p>
+              <input
+                className="input text-center text-lg tracking-[0.3em] font-mono max-w-[200px] mt-2"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button className="btn-ghost text-sm" onClick={() => { setSetting2fa(false); setTfaError(null); }}>Cancel</button>
+              <button className="btn-primary text-sm" disabled={tfaLoading || code.length !== 6} onClick={confirmEnable}>
+                {tfaLoading ? 'Verifying…' : 'Verify & Enable'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card p-6">

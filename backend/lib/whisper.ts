@@ -1,11 +1,15 @@
 // OpenAI Whisper transcription wrapper.
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import { requireEnv } from './http.js';
 
 let _client: OpenAI | null = null;
 function client(): OpenAI {
   if (_client) return _client;
-  _client = new OpenAI({ apiKey: requireEnv('OPENAI_API_KEY') });
+  _client = new OpenAI({
+    apiKey: requireEnv('OPENAI_API_KEY'),
+    timeout: 120_000, // 2 minutes — Whisper can be slow on large files
+    maxRetries: 3,    // auto-retry on transient errors like ECONNRESET
+  });
   return _client;
 }
 
@@ -25,8 +29,9 @@ export async function transcribeUrl(audioUrl: string, language?: 'en' | 'es'): P
   const filename =
     audioUrl.split('/').pop()?.split('?')[0] ?? 'audio.webm';
 
-  // OpenAI SDK accepts a File. We synthesize one from the blob.
-  const file = new File([audioBlob], filename, {
+  // Convert to Buffer then use OpenAI's toFile helper for reliable uploads.
+  const buffer = Buffer.from(await audioBlob.arrayBuffer());
+  const file = await toFile(buffer, filename, {
     type: audioBlob.type || 'audio/webm',
   });
 

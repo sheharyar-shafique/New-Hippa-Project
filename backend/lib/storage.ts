@@ -52,7 +52,7 @@ export async function createSignedUpload(params: {
 }) {
   const { kind, userId, filename, contentType } = params;
   const bucket = BUCKETS[kind];
-  if (contentType && !ALLOWED_TYPES[kind].includes(contentType)) {
+  if (contentType && !ALLOWED_TYPES[kind].some((t) => contentType.startsWith(t))) {
     throw new Error(`Content-Type "${contentType}" not allowed for ${kind} uploads`);
   }
   const safe = filename.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-180);

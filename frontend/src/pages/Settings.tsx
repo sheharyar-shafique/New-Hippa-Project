@@ -186,28 +186,161 @@ function BillingTab() {
 
 function TemplatesTab() {
   const t = useT();
+
+  type Template = {
+    id: string;
+    name: string;
+    specialty: string;
+    format: string;
+    prompt: string;
+  };
+
+  const DEFAULT_TEMPLATES: Template[] = [
+    { id: '1', name: 'Internal Medicine — Follow-up / Seguimiento', specialty: 'Internal Medicine', format: 'SOAP', prompt: 'Generate a follow-up SOAP note for an internal medicine patient. Include relevant vitals, current medications, and assessment of chronic conditions.' },
+    { id: '2', name: 'Internal Medicine — New Patient / Paciente nuevo', specialty: 'Internal Medicine', format: 'SOAP', prompt: 'Generate a comprehensive new patient intake SOAP note. Include complete history, review of systems, physical examination, and initial assessment with plan.' },
+    { id: '3', name: 'Diabetes Management / Manejo de diabetes', specialty: 'Internal Medicine', format: 'SOAP', prompt: 'Generate a diabetes-focused SOAP note. Include A1c trends, glucose logs, medication adjustments, diet/exercise counseling, and complications screening.' },
+    { id: '4', name: 'Hypertension Follow-up / Seguimiento HTA', specialty: 'Internal Medicine', format: 'SOAP', prompt: 'Generate a hypertension follow-up SOAP note. Include BP readings, medication efficacy, lifestyle modifications, and target organ damage assessment.' },
+    { id: '5', name: 'Acute Visit (Adult) / Consulta aguda (adulto)', specialty: 'Internal Medicine', format: 'SOAP', prompt: 'Generate an acute visit SOAP note. Focus on chief complaint, HPI, targeted exam, differential diagnosis, and treatment plan.' },
+    { id: '6', name: 'Annual Wellness / Chequeo anual', specialty: 'Internal Medicine', format: 'SOAP', prompt: 'Generate an annual wellness visit note. Include preventive screenings, immunizations, chronic disease management, and health maintenance counseling.' },
+  ];
+
+  const [templates, setTemplates] = useState<Template[]>(() => {
+    try {
+      const saved = localStorage.getItem('notemd_templates');
+      return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
+    } catch {
+      return DEFAULT_TEMPLATES;
+    }
+  });
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Template | null>(null);
+
+  const save = (list: Template[]) => {
+    setTemplates(list);
+    localStorage.setItem('notemd_templates', JSON.stringify(list));
+  };
+
+  const startEdit = (tpl: Template) => {
+    setEditingId(tpl.id);
+    setDraft({ ...tpl });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft(null);
+  };
+
+  const saveEdit = () => {
+    if (!draft) return;
+    save(templates.map((t) => (t.id === draft.id ? draft : t)));
+    setEditingId(null);
+    setDraft(null);
+  };
+
+  const duplicate = (tpl: Template) => {
+    const newTpl: Template = {
+      ...tpl,
+      id: Date.now().toString(),
+      name: tpl.name + ' (copy)',
+    };
+    save([...templates, newTpl]);
+  };
+
+  const remove = (id: string) => {
+    save(templates.filter((t) => t.id !== id));
+    if (editingId === id) cancelEdit();
+  };
+
+  const addNew = () => {
+    const newTpl: Template = {
+      id: Date.now().toString(),
+      name: 'New Template',
+      specialty: 'Internal Medicine',
+      format: 'SOAP',
+      prompt: '',
+    };
+    save([...templates, newTpl]);
+    startEdit(newTpl);
+  };
+
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between">
         <p className="section-title">{t('settings.templatesSection')}</p>
-        <button className="btn-primary text-sm">{t('settings.newTemplate')}</button>
+        <button className="btn-primary text-sm" onClick={addNew}>{t('settings.newTemplate')}</button>
       </div>
       <ul className="mt-4 grid md:grid-cols-2 gap-3">
-        {[
-          'Internal Medicine — Follow-up / Seguimiento',
-          'Internal Medicine — New Patient / Paciente nuevo',
-          'Diabetes Management / Manejo de diabetes',
-          'Hypertension Follow-up / Seguimiento HTA',
-          'Acute Visit (Adult) / Consulta aguda (adulto)',
-          'Annual Wellness / Chequeo anual',
-        ].map((tt) => (
-          <li key={tt} className="rounded-xl border border-ink-200 bg-white p-4 hover:shadow-soft transition">
-            <p className="font-semibold text-ink-900">{tt}</p>
-            <p className="text-xs text-ink-500 mt-1">{t('common.specialtyDefault')} · SOAP</p>
-            <div className="mt-3 flex gap-2">
-              <button className="btn-ghost text-xs">{t('common.edit')}</button>
-              <button className="btn-ghost text-xs">{t('settings.duplicate')}</button>
-            </div>
+        {templates.map((tpl) => (
+          <li
+            key={tpl.id}
+            className={`rounded-xl border bg-white p-4 transition ${
+              editingId === tpl.id ? 'border-brand-400 shadow-soft col-span-full' : 'border-ink-200 hover:shadow-soft'
+            }`}
+          >
+            {editingId === tpl.id && draft ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="label">Template Name</label>
+                  <input
+                    className="input"
+                    value={draft.name}
+                    onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                  />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Specialty</label>
+                    <input
+                      className="input"
+                      value={draft.specialty}
+                      onChange={(e) => setDraft({ ...draft, specialty: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Format</label>
+                    <select
+                      className="input"
+                      value={draft.format}
+                      onChange={(e) => setDraft({ ...draft, format: e.target.value })}
+                    >
+                      <option value="SOAP">SOAP</option>
+                      <option value="H&P">H&P</option>
+                      <option value="Progress Note">Progress Note</option>
+                      <option value="Procedure Note">Procedure Note</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="label">AI Prompt / Instructions</label>
+                  <textarea
+                    className="input min-h-[100px] resize-y"
+                    value={draft.prompt}
+                    onChange={(e) => setDraft({ ...draft, prompt: e.target.value })}
+                    placeholder="Describe how the AI should structure and generate notes using this template..."
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button className="btn-ghost text-sm" onClick={cancelEdit}>{t('common.cancel')}</button>
+                  <button className="btn-primary text-sm" onClick={saveEdit}>{t('common.saveChanges')}</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="font-semibold text-ink-900">{tpl.name}</p>
+                <p className="text-xs text-ink-500 mt-1">{tpl.specialty} · {tpl.format}</p>
+                {tpl.prompt && (
+                  <p className="text-xs text-ink-400 mt-1 line-clamp-2">{tpl.prompt}</p>
+                )}
+                <div className="mt-3 flex gap-2">
+                  <button className="btn-ghost text-xs" onClick={() => startEdit(tpl)}>{t('common.edit')}</button>
+                  <button className="btn-ghost text-xs" onClick={() => duplicate(tpl)}>{t('settings.duplicate')}</button>
+                  <button className="btn-ghost text-xs text-red-600 hover:bg-red-50" onClick={() => remove(tpl.id)}>
+                    {t('common.delete') ?? 'Delete'}
+                  </button>
+                </div>
+              </>
+            )}
           </li>
         ))}
       </ul>

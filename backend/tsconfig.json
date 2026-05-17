@@ -16,5 +16,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["api", "lib", "prisma"]
+  "include": ["server.ts", "api", "lib", "prisma"]
 }
